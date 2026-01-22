@@ -23,3 +23,4 @@ redis.connect().catch((err) => {
 });
 
 export default redis;
+1
