@@ -20,3 +20,6 @@
 - frontend/ -> App React (Vite)
 - db/ -> Postgres (via container)
 - minio/ -> armazenamento S3 local
+
+## SMS
+- Configure as credenciais da Twilio no `.env` para habilitar envio de codigos.

@@ -359,7 +359,7 @@ export default function Home() {
               <div className="promo-grid">
                 <div className="promo-tile">
                   <span className="promo-icon">★</span>
-                  <p>Top 69 sites mais visitados do pais</p>
+                  <p>Um dos sites mais visitados do pais</p>
                 </div>
                 <div className="promo-tile">
                   <span className="promo-icon">◎</span>
@@ -512,9 +512,14 @@ export default function Home() {
           Solucoes exclusivas para marcas que queiram anunciar na plataforma.
         </p>
         <div className="hero-actions">
-          <Link to="/contato" className="btn">
+          <a
+            className="btn"
+            href="https://wa.me/554984170134"
+            target="_blank"
+            rel="noreferrer"
+          >
             Falar com equipe
-          </Link>
+          </a>
           <Link to="/anuncie" className="btn btn-outline">
             Ver planos
           </Link>

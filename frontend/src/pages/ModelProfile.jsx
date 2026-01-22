@@ -5,6 +5,7 @@ import { apiFetch } from "../lib/api";
 export default function ModelProfile() {
   const { id } = useParams();
   const [model, setModel] = useState(null);
+  const [media, setMedia] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -12,6 +13,12 @@ export default function ModelProfile() {
       .then((data) => setModel(data))
       .catch(() => setModel(null))
       .finally(() => setLoading(false));
+  }, [id]);
+
+  useEffect(() => {
+    apiFetch(`/api/media/model/${id}`)
+      .then((data) => setMedia(data))
+      .catch(() => setMedia([]));
   }, [id]);
 
   if (loading) {
@@ -70,6 +77,34 @@ export default function ModelProfile() {
 
           <div className="divider" />
 
+          {media.length > 0 ? (
+            <>
+              <p className="muted" style={{ marginBottom: 12 }}>
+                Midias aprovadas
+              </p>
+              <div className="models-grid">
+                {media.map((item) =>
+                  item.type === "VIDEO" ? (
+                    <video
+                      key={item.id}
+                      src={item.url}
+                      controls
+                      style={{ width: "100%", borderRadius: 12 }}
+                    />
+                  ) : (
+                    <img
+                      key={item.id}
+                      src={item.url}
+                      alt="Midia da modelo"
+                      style={{ width: "100%", borderRadius: 12 }}
+                    />
+                  )
+                )}
+              </div>
+              <div className="divider" />
+            </>
+          ) : null}
+
           <p className="muted" style={{ marginBottom: 12 }}>
             Contato e redes
           </p>
@@ -79,9 +114,8 @@ export default function ModelProfile() {
           </div>
 
           <div className="form-actions">
-            <button className="btn">Entrar em contato</button>
-            <Link to="/contato" className="btn btn-outline">
-              Falar com agencia
+            <Link to="/contato" className="btn">
+              Entrar em contato
             </Link>
           </div>
         </div>

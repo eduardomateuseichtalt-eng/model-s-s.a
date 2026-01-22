@@ -26,24 +26,10 @@ export default function Pricing() {
         </h2>
         <div className="cards" style={{ marginTop: 16 }}>
           <div className="card">
-            <h4 style={{ color: "#cd7f32" }}>Bronze</h4>
-            <p className="muted">Plano de entrada</p>
+            <h4 style={{ color: "#d4af37" }}>Premium</h4>
+            <p className="muted">Acesso completo com destaque</p>
             <p>
-              <strong>R$ 250,00</strong>
-            </p>
-          </div>
-          <div className="card">
-            <h4 style={{ color: "#c0c0c0" }}>Prata</h4>
-            <p className="muted">Mais visibilidade</p>
-            <p>
-              <strong>R$ 320,00</strong>
-            </p>
-          </div>
-          <div className="card">
-            <h4 style={{ color: "#d4af37" }}>Ouro</h4>
-            <p className="muted">Destaque premium</p>
-            <p>
-              <strong>R$ 450,00</strong>
+              <strong>R$ 39,99</strong>
             </p>
           </div>
         </div>
