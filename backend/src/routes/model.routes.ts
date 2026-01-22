@@ -50,6 +50,13 @@ router.post("/register", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Dados obrigatorios ausentes" });
     }
 
+    const cleanName = String(name).trim();
+    const cleanEmail = String(email).trim();
+
+    if (!cleanName || !cleanEmail) {
+      return res.status(400).json({ error: "Dados obrigatorios ausentes" });
+    }
+
     const parsedAge = toNumberOrNull(age);
 
     if (parsedAge === null || parsedAge < 18) {
@@ -59,7 +66,7 @@ router.post("/register", async (req: Request, res: Response) => {
     }
 
     const exists = await prisma.model.findUnique({
-      where: { email },
+      where: { email: cleanEmail },
     });
 
     if (exists) {
@@ -70,8 +77,8 @@ router.post("/register", async (req: Request, res: Response) => {
 
     const created = await prisma.model.create({
       data: {
-        name: trimToNull(name),
-        email: trimToNull(email),
+        name: cleanName,
+        email: cleanEmail,
         password: passwordHash,
         age: parsedAge,
         city: trimToNull(city),

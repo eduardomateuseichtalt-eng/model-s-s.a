@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { ShotType } from "@prisma/client";
 import { prisma } from "./lib/prisma";
 
 const models = [
@@ -202,21 +203,21 @@ async function main() {
   const shots = [
     {
       modelEmail: "ayla@models-sa.com",
-      type: "IMAGE",
+      type: ShotType.IMAGE,
       imageUrl: "/model-placeholder.svg",
       videoUrl: null,
       posterUrl: null,
     },
     {
       modelEmail: "isis@models-sa.com",
-      type: "IMAGE",
+      type: ShotType.IMAGE,
       imageUrl: "/model-placeholder.svg",
       videoUrl: null,
       posterUrl: null,
     },
     {
       modelEmail: "lina@models-sa.com",
-      type: "IMAGE",
+      type: ShotType.IMAGE,
       imageUrl: "/model-placeholder.svg",
       videoUrl: null,
       posterUrl: null,
