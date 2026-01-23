@@ -1,15 +1,16 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { requireAdmin } from "../lib/auth";
+import { asyncHandler } from "../lib/async-handler";
 
 const router = Router();
 
-router.post("/visit", async (_req: Request, res: Response) => {
+router.post("/visit", asyncHandler(async (_req: Request, res: Response) => {
   await prisma.siteAccess.create({ data: {} });
   return res.status(201).json({ status: "ok" });
-});
+}));
 
-router.get("/summary", requireAdmin, async (_req: Request, res: Response) => {
+router.get("/summary", requireAdmin, asyncHandler(async (_req: Request, res: Response) => {
   const now = new Date();
   const dayStart = new Date(now);
   dayStart.setDate(now.getDate() - 1);
@@ -26,6 +27,6 @@ router.get("/summary", requireAdmin, async (_req: Request, res: Response) => {
   ]);
 
   return res.json({ day, week, month, total });
-});
+}));
 
 export default router;

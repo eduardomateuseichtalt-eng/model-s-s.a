@@ -3,6 +3,7 @@ import multer from "multer";
 import { prisma } from "../lib/prisma";
 import { getUserFromRequest, requireAuth } from "../lib/auth";
 import { deleteFromBunny, uploadToBunny } from "../lib/bunny";
+import { asyncHandler } from "../lib/async-handler";
 
 const router = Router();
 
@@ -63,7 +64,7 @@ async function purgeExpiredShots() {
   }
 }
 
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", asyncHandler(async (req: Request, res: Response) => {
   await purgeExpiredShots();
   const user = getUserFromRequest(req);
 
@@ -117,86 +118,78 @@ router.get("/", async (req: Request, res: Response) => {
   }));
 
   return res.json(response);
-});
+}));
 
 router.post(
   "/upload",
   requireAuth,
   upload.array("files", 2),
-  async (req: Request, res: Response) => {
-    try {
-      await purgeExpiredShots();
-      const user = res.locals.user as { id: string; role: string };
-      if (!user || user.role !== "MODEL") {
-        return res.status(403).json({ error: "Acesso restrito" });
+  asyncHandler(async (req: Request, res: Response) => {
+    await purgeExpiredShots();
+    const user = res.locals.user as { id: string; role: string };
+    if (!user || user.role !== "MODEL") {
+      return res.status(403).json({ error: "Acesso restrito" });
+    }
+
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: "Nenhum arquivo enviado" });
+    }
+
+    const model = await prisma.model.findUnique({ where: { id: user.id } });
+    if (!model) {
+      return res.status(404).json({ error: "Modelo nao encontrada" });
+    }
+    if (!model.isVerified) {
+      return res.status(403).json({ error: "Modelo nao aprovada" });
+    }
+
+    let images = 0;
+    let videos = 0;
+    for (const file of files) {
+      if (!shotTypes.has(file.mimetype)) {
+        return res.status(400).json({ error: "Formato de arquivo invalido" });
       }
-
-      const files = req.files as Express.Multer.File[];
-      if (!files || files.length === 0) {
-        return res.status(400).json({ error: "Nenhum arquivo enviado" });
+      if (file.mimetype.startsWith("video/")) {
+        videos += 1;
+      } else {
+        images += 1;
       }
+    }
 
-      const model = await prisma.model.findUnique({ where: { id: user.id } });
-      if (!model) {
-        return res.status(404).json({ error: "Modelo nao encontrada" });
-      }
-      if (!model.isVerified) {
-        return res.status(403).json({ error: "Modelo nao aprovada" });
-      }
-
-      let images = 0;
-      let videos = 0;
-      for (const file of files) {
-        if (!shotTypes.has(file.mimetype)) {
-          return res.status(400).json({ error: "Formato de arquivo invalido" });
-        }
-        if (file.mimetype.startsWith("video/")) {
-          videos += 1;
-        } else {
-          images += 1;
-        }
-      }
-
-      if (videos > 1 || images > 2 || (videos > 0 && images > 0)) {
-        return res.status(400).json({
-          error: "Envie 1 video ou ate 2 fotos por vez.",
-        });
-      }
-
-      const uploads = [];
-      for (const file of files) {
-        const result = await uploadToBunny(
-          file.buffer,
-          file.originalname,
-          file.mimetype
-        );
-
-        const created = await prisma.shot.create({
-          data: {
-            modelId: user.id,
-            type: file.mimetype.startsWith("video/") ? "VIDEO" : "IMAGE",
-            videoUrl: file.mimetype.startsWith("video/") ? result.url : null,
-            imageUrl: file.mimetype.startsWith("video/") ? null : result.url,
-            posterUrl: null,
-            isActive: true,
-          },
-        });
-
-        uploads.push(created);
-      }
-
-      return res.status(201).json({ uploads });
-    } catch (error) {
-      console.error("Shot upload error:", error);
-      return res.status(500).json({
-        error:
-          error instanceof Error ? error.message : "Erro ao enviar shot",
+    if (videos > 1 || images > 2 || (videos > 0 && images > 0)) {
+      return res.status(400).json({
+        error: "Envie 1 video ou ate 2 fotos por vez.",
       });
     }
-  }
+
+    const uploads = [];
+    for (const file of files) {
+      const result = await uploadToBunny(
+        file.buffer,
+        file.originalname,
+        file.mimetype
+      );
+
+      const created = await prisma.shot.create({
+        data: {
+          modelId: user.id,
+          type: file.mimetype.startsWith("video/") ? "VIDEO" : "IMAGE",
+          videoUrl: file.mimetype.startsWith("video/") ? result.url : null,
+          imageUrl: file.mimetype.startsWith("video/") ? null : result.url,
+          posterUrl: null,
+          isActive: true,
+        },
+      });
+
+      uploads.push(created);
+    }
+
+    return res.status(201).json({ uploads });
+  })
 );
 
-router.post("/:id/like", requireAuth, async (req: Request, res: Response) => {
+router.post("/:id/like", requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const user = res.locals.user;
 
@@ -229,9 +222,9 @@ router.post("/:id/like", requireAuth, async (req: Request, res: Response) => {
   const likeCount = await prisma.shotLike.count({ where: { shotId: id } });
 
   return res.json({ liked: true, likeCount });
-});
+}));
 
-router.delete("/:id/like", requireAuth, async (req: Request, res: Response) => {
+router.delete("/:id/like", requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const user = res.locals.user;
 
@@ -249,9 +242,9 @@ router.delete("/:id/like", requireAuth, async (req: Request, res: Response) => {
   const likeCount = await prisma.shotLike.count({ where: { shotId: id } });
 
   return res.json({ liked: false, likeCount });
-});
+}));
 
-router.post("/:id/like-guest", async (req: Request, res: Response) => {
+router.post("/:id/like-guest", asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const shot = await prisma.shot.findFirst({
@@ -269,6 +262,6 @@ router.post("/:id/like-guest", async (req: Request, res: Response) => {
   });
 
   return res.json({ liked: true, likeCount: updated.likeCount });
-});
+}));
 
 export default router;

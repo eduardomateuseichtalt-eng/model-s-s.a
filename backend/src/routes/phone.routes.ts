@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { redis } from "../lib/redis";
 import { sendSmsCode } from "../lib/sms";
+import { asyncHandler } from "../lib/async-handler";
 
 const router = Router();
 
@@ -48,7 +49,7 @@ async function incrementWithExpiry(key: string, ttlSeconds: number) {
   return count;
 }
 
-router.post("/send-code", async (req: Request, res: Response) => {
+router.post("/send-code", asyncHandler(async (req: Request, res: Response) => {
   const rawPhone = String(req.body.phone || "");
   const phone = normalizePhone(rawPhone);
 
@@ -87,9 +88,9 @@ router.post("/send-code", async (req: Request, res: Response) => {
   }
 
   return res.json({ success: true, expiresIn: CODE_TTL_SECONDS });
-});
+}));
 
-router.post("/verify-code", async (req: Request, res: Response) => {
+router.post("/verify-code", asyncHandler(async (req: Request, res: Response) => {
   const rawPhone = String(req.body.phone || "");
   const rawCode = String(req.body.code || "");
   const phone = normalizePhone(rawPhone);
@@ -124,6 +125,6 @@ router.post("/verify-code", async (req: Request, res: Response) => {
   await Promise.all([redis.del(codeKey), redis.del(attemptKey)]);
 
   return res.json({ verified: true });
-});
+}));
 
 export default router;

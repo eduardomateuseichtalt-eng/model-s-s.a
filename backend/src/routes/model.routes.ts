@@ -4,109 +4,105 @@ import jwt from "jsonwebtoken";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { requireAdmin } from "../lib/auth";
+import { asyncHandler } from "../lib/async-handler";
 
 const router = Router();
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "access_secret_dev";
 
-router.post("/register", async (req: Request, res: Response) => {
-  try {
-    const {
-      name,
-      email,
-      password,
-      age,
-      city,
-      bio,
-      avatarUrl,
-      coverUrl,
-      instagram,
-      whatsapp,
-      height,
-      weight,
-      bust,
-      waist,
-      hips,
-      priceHour,
-    } = req.body;
+router.post("/register", asyncHandler(async (req: Request, res: Response) => {
+  const {
+    name,
+    email,
+    password,
+    age,
+    city,
+    bio,
+    avatarUrl,
+    coverUrl,
+    instagram,
+    whatsapp,
+    height,
+    weight,
+    bust,
+    waist,
+    hips,
+    priceHour,
+  } = req.body;
 
-    const trimToNull = (value?: string | null) => {
-      if (typeof value !== "string") {
-        return value ?? null;
-      }
-      const trimmed = value.trim();
-      return trimmed.length > 0 ? trimmed : null;
-    };
-
-    const toNumberOrNull = (value?: number | string | null) => {
-      if (value === null || value === undefined || value === "") {
-        return null;
-      }
-      const parsed =
-        typeof value === "number" ? value : Number(String(value).trim());
-      return Number.isFinite(parsed) ? parsed : null;
-    };
-
-    if (!name || !email || !password || age === undefined) {
-      return res.status(400).json({ error: "Dados obrigatorios ausentes" });
+  const trimToNull = (value?: string | null) => {
+    if (typeof value !== "string") {
+      return value ?? null;
     }
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  };
 
-    const cleanName = String(name).trim();
-    const cleanEmail = String(email).trim();
-
-    if (!cleanName || !cleanEmail) {
-      return res.status(400).json({ error: "Dados obrigatorios ausentes" });
+  const toNumberOrNull = (value?: number | string | null) => {
+    if (value === null || value === undefined || value === "") {
+      return null;
     }
+    const parsed =
+      typeof value === "number" ? value : Number(String(value).trim());
+    return Number.isFinite(parsed) ? parsed : null;
+  };
 
-    const parsedAge = toNumberOrNull(age);
-
-    if (parsedAge === null || parsedAge < 18) {
-      return res
-        .status(403)
-        .json({ error: "Cadastro permitido apenas para maiores de 18 anos" });
-    }
-
-    const exists = await prisma.model.findUnique({
-      where: { email: cleanEmail },
-    });
-
-    if (exists) {
-      return res.status(409).json({ error: "Email ja cadastrado" });
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const created = await prisma.model.create({
-      data: {
-        name: cleanName,
-        email: cleanEmail,
-        password: passwordHash,
-        age: parsedAge,
-        city: trimToNull(city),
-        bio: trimToNull(bio),
-        avatarUrl: trimToNull(avatarUrl),
-        coverUrl: trimToNull(coverUrl),
-        instagram: trimToNull(instagram),
-        whatsapp: trimToNull(whatsapp),
-        height: toNumberOrNull(height),
-        weight: toNumberOrNull(weight),
-        bust: toNumberOrNull(bust),
-        waist: toNumberOrNull(waist),
-        hips: toNumberOrNull(hips),
-        priceHour: toNumberOrNull(priceHour),
-      },
-    });
-
-    return res.status(201).json({
-      message: "Cadastro realizado com sucesso. Aguarde aprovacao.",
-      id: created.id,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Erro interno do servidor" });
+  if (!name || !email || !password || age === undefined) {
+    return res.status(400).json({ error: "Dados obrigatorios ausentes" });
   }
-});
 
-router.post("/login", async (req: Request, res: Response) => {
+  const cleanName = String(name).trim();
+  const cleanEmail = String(email).trim();
+
+  if (!cleanName || !cleanEmail) {
+    return res.status(400).json({ error: "Dados obrigatorios ausentes" });
+  }
+
+  const parsedAge = toNumberOrNull(age);
+
+  if (parsedAge === null || parsedAge < 18) {
+    return res
+      .status(403)
+      .json({ error: "Cadastro permitido apenas para maiores de 18 anos" });
+  }
+
+  const exists = await prisma.model.findUnique({
+    where: { email: cleanEmail },
+  });
+
+  if (exists) {
+    return res.status(409).json({ error: "Email ja cadastrado" });
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  const created = await prisma.model.create({
+    data: {
+      name: cleanName,
+      email: cleanEmail,
+      password: passwordHash,
+      age: parsedAge,
+      city: trimToNull(city),
+      bio: trimToNull(bio),
+      avatarUrl: trimToNull(avatarUrl),
+      coverUrl: trimToNull(coverUrl),
+      instagram: trimToNull(instagram),
+      whatsapp: trimToNull(whatsapp),
+      height: toNumberOrNull(height),
+      weight: toNumberOrNull(weight),
+      bust: toNumberOrNull(bust),
+      waist: toNumberOrNull(waist),
+      hips: toNumberOrNull(hips),
+      priceHour: toNumberOrNull(priceHour),
+    },
+  });
+
+  return res.status(201).json({
+    message: "Cadastro realizado com sucesso. Aguarde aprovacao.",
+    id: created.id,
+  });
+}));
+
+router.post("/login", asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -142,9 +138,9 @@ router.post("/login", async (req: Request, res: Response) => {
       role: "MODEL",
     },
   });
-});
+}));
 
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", asyncHandler(async (_req: Request, res: Response) => {
   const models = await prisma.model.findMany({
     where: { isVerified: true },
     select: {
@@ -158,9 +154,9 @@ router.get("/", async (_req: Request, res: Response) => {
   });
 
   return res.json(models);
-});
+}));
 
-router.get("/pending", requireAdmin, async (_req: Request, res: Response) => {
+router.get("/pending", requireAdmin, asyncHandler(async (_req: Request, res: Response) => {
   const models = await prisma.model.findMany({
     where: { isVerified: false },
     orderBy: { createdAt: "desc" },
@@ -174,9 +170,9 @@ router.get("/pending", requireAdmin, async (_req: Request, res: Response) => {
   });
 
   return res.json(models);
-});
+}));
 
-router.patch("/:id/approve", requireAdmin, async (req: Request, res: Response) => {
+router.patch("/:id/approve", requireAdmin, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const model = await prisma.model.findUnique({ where: { id } });
@@ -198,9 +194,9 @@ router.patch("/:id/approve", requireAdmin, async (req: Request, res: Response) =
   });
 
   return res.json(updated);
-});
+}));
 
-router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
+router.delete("/:id", requireAdmin, asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const model = await prisma.model.findUnique({ where: { id } });
@@ -230,9 +226,9 @@ router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   await prisma.$transaction(operations);
 
   return res.json({ status: "deleted" });
-});
+}));
 
-router.get("/:id", async (req: Request, res: Response) => {
+router.get("/:id", asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
 
   const model = await prisma.model.findFirst({
@@ -260,6 +256,6 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 
   return res.json(model);
-});
+}));
 
 export default router;

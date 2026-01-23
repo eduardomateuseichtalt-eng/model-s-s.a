@@ -4,6 +4,7 @@ import path from "path";
 dotenv.config({ path: path.resolve(__dirname, "..", ".env"), override: true });
 
 import express from "express";
+import type { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -22,10 +23,33 @@ import cacheImageRoutes from "./routes/cache-image.routes";
 // ========================
 const app = express();
 
-app.use(cors({ origin: "http://localhost:5173" }));
+const allowedOrigins = new Set(
+  [
+    process.env.FRONTEND_URL,
+    process.env.FRONTEND_URL_PREVIEW,
+    "http://localhost:5173",
+  ].filter(Boolean) as string[]
+);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (allowedOrigins.has(origin)) {
+        return callback(null, true);
+      }
+      if (/\.vercel\.app$/.test(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+  })
+);
 app.use(express.json());
 
-const PORT = 4000;
+const PORT = Number(process.env.PORT) || 4000;
 
 // ========================
 // JWT CONFIG
@@ -48,73 +72,87 @@ function generateRefreshToken(payload: object) {
 // AUTH ROUTES
 // ========================
 app.post("/api/auth/register", async (req, res) => {
-  const { email, password, displayName } = req.body;
+  try {
+    const { email, password, displayName } = req.body;
 
-  if (!email || !password || !displayName) {
-    return res.status(400).json({ error: "Dados obrigatorios ausentes" });
-  }
+    if (!email || !password || !displayName) {
+      return res.status(400).json({ error: "Dados obrigatorios ausentes" });
+    }
 
-  const exists = await prisma.user.findUnique({
-    where: { email },
-  });
+    const exists = await prisma.user.findUnique({
+      where: { email },
+    });
 
-  if (exists) {
-    return res.status(409).json({ error: "Email ja cadastrado" });
-  }
+    if (exists) {
+      return res.status(409).json({ error: "Email ja cadastrado" });
+    }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      displayName,
-      passwordHash,
-      role: "USER",
-    },
-  });
+    const user = await prisma.user.create({
+      data: {
+        email,
+        displayName,
+        passwordHash,
+        role: "USER",
+      },
+    });
 
-  res.status(201).json({
-    id: user.id,
-    email: user.email,
-    displayName: user.displayName,
-  });
-});
-
-app.post("/api/auth/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
-
-  if (!user) {
-    return res.status(401).json({ error: "Credenciais invalidas" });
-  }
-
-  const valid = await bcrypt.compare(password, user.passwordHash);
-
-  if (!valid) {
-    return res.status(401).json({ error: "Credenciais invalidas" });
-  }
-
-  const accessToken = generateAccessToken({
-    id: user.id,
-    email: user.email,
-    role: user.role,
-  });
-
-  const refreshToken = generateRefreshToken({ id: user.id });
-
-  res.json({
-    accessToken,
-    refreshToken,
-    user: {
+    return res.status(201).json({
       id: user.id,
       email: user.email,
       displayName: user.displayName,
+    });
+  } catch (error) {
+    console.error("Register error:", error);
+    return res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Dados obrigatorios ausentes" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: "Credenciais invalidas" });
+    }
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+
+    if (!valid) {
+      return res.status(401).json({ error: "Credenciais invalidas" });
+    }
+
+    const accessToken = generateAccessToken({
+      id: user.id,
+      email: user.email,
       role: user.role,
-    },
-  });
+    });
+
+    const refreshToken = generateRefreshToken({ id: user.id });
+
+    return res.json({
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    return res.status(500).json({ error: "Erro interno do servidor" });
+  }
 });
 
 // ========================
@@ -141,12 +179,43 @@ app.get("/api/health/db", async (_req, res) => {
 });
 
 // ========================
-// START SERVER
+// FALLBACK + ERROR HANDLING
 // ========================
-app.listen(PORT, () => {
-  console.log(`API running on http://localhost:${PORT}`);
+app.use((_req, res) => {
+  res.status(404).json({ error: "Rota nao encontrada" });
 });
 
-initRedis().catch((error) => {
-  console.error("Failed to connect to Redis:", error);
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  console.error("API error:", err);
+  res.status(500).json({ error: "Erro interno do servidor" });
+});
+
+// ========================
+// START SERVER
+// ========================
+async function startServer() {
+  try {
+    await prisma.$connect();
+    console.log("Prisma connected");
+  } catch (error) {
+    console.error("Failed to connect to database:", error);
+  }
+
+  app.listen(PORT, () => {
+    console.log(`API running on port ${PORT}`);
+  });
+
+  initRedis().catch((error) => {
+    console.error("Failed to connect to Redis:", error);
+  });
+}
+
+startServer();
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
 });

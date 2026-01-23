@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../lib/auth";
+import { asyncHandler } from "../lib/async-handler";
 
 const router = Router();
 
@@ -19,7 +20,7 @@ const toCityKey = (value: string) =>
     .toLowerCase()
     .replace(/\s+/g, " ");
 
-router.post("/", requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const user = res.locals.user as { id: string; role: string };
   if (!user || user.role !== "MODEL") {
     return res.status(403).json({ error: "Acesso restrito" });
@@ -59,9 +60,9 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
   });
 
   return res.status(201).json(created);
-});
+}));
 
-router.get("/", requireAuth, async (req: Request, res: Response) => {
+router.get("/", requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const user = res.locals.user as { id: string; role: string };
   if (!user || user.role !== "MODEL") {
     return res.status(403).json({ error: "Acesso restrito" });
@@ -98,6 +99,6 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     total,
     breakdown,
   });
-});
+}));
 
 export default router;
