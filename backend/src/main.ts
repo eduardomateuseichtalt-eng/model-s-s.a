@@ -193,13 +193,25 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 // ========================
 // START SERVER
 // ========================
-async function startServer() {
-  try {
-    await prisma.$connect();
-    console.log("Prisma connected");
-  } catch (error) {
-    console.error("Failed to connect to database:", error);
+async function connectToDatabase(retries = 5, delayMs = 3000) {
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    try {
+      await prisma.$connect();
+      console.log("✅ Prisma connected");
+      return;
+    } catch (error) {
+      console.error(`❌ Failed to connect to database (attempt ${attempt}):`, error);
+      if (attempt < retries) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
   }
+  console.error("❌ Could not connect to database after retries. Exiting.");
+  process.exit(1);
+}
+
+async function startServer() {
+  await connectToDatabase();
 
   app.listen(PORT, () => {
     console.log(`API running on port ${PORT}`);
