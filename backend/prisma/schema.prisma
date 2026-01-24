@@ -8,9 +8,9 @@ datasource db {
 }
 
 model Model {
-  id         String   @id @default(uuid())
+  id         String     @id @default(uuid())
   name       String
-  email      String   @unique
+  email      String     @unique
   password   String
   age        Int
   city       String?
@@ -25,11 +25,11 @@ model Model {
   waist      Int?
   hips       Int?
   priceHour  Int?
-  isVerified Boolean  @default(false)
-  createdAt DateTime @default(now())
-  shots      Shot[]
-  media      Media[]
+  isVerified Boolean    @default(false)
+  createdAt  DateTime   @default(now())
   cityStats  CityStat[]
+  media      Media[]
+  shots      Shot[]
 }
 
 model User {
@@ -45,24 +45,24 @@ model User {
 model Shot {
   id        String     @id @default(uuid())
   modelId   String
-  model     Model      @relation(fields: [modelId], references: [id])
-  type      ShotType   @default(VIDEO)
   videoUrl  String?
-  imageUrl  String?
   posterUrl String?
   isActive  Boolean    @default(true)
   createdAt DateTime   @default(now())
-  likes     ShotLike[]
+  imageUrl  String?
+  type      ShotType   @default(VIDEO)
   likeCount Int        @default(0)
+  model     Model      @relation(fields: [modelId], references: [id])
+  likes     ShotLike[]
 }
 
 model ShotLike {
   id        String   @id @default(uuid())
   shotId    String
   userId    String
+  createdAt DateTime @default(now())
   shot      Shot     @relation(fields: [shotId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
 
   @@unique([shotId, userId])
 }
@@ -72,6 +72,33 @@ model SiteAccess {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+model Media {
+  id        String      @id @default(uuid())
+  modelId   String
+  type      MediaType
+  status    MediaStatus @default(PENDING)
+  url       String
+  createdAt DateTime    @default(now())
+  model     Model       @relation(fields: [modelId], references: [id])
+
+  @@index([modelId])
+}
+
+model CityStat {
+  id        String   @id @default(uuid())
+  modelId   String
+  city      String
+  cityKey   String
+  color     String
+  count     Int
+  days      Int
+  createdAt DateTime @default(now())
+  model     Model    @relation(fields: [modelId], references: [id])
+
+  @@index([modelId])
+  @@index([cityKey])
 }
 
 enum MediaType {
@@ -88,31 +115,4 @@ enum MediaStatus {
 enum ShotType {
   VIDEO
   IMAGE
-}
-
-model Media {
-  id        String      @id @default(uuid())
-  modelId   String
-  model     Model       @relation(fields: [modelId], references: [id])
-  type      MediaType
-  status    MediaStatus @default(PENDING)
-  url       String
-  createdAt DateTime    @default(now())
-
-  @@index([modelId])
-}
-
-model CityStat {
-  id        String   @id @default(uuid())
-  modelId   String
-  model     Model    @relation(fields: [modelId], references: [id])
-  city      String
-  cityKey   String
-  color     String
-  count     Int
-  days      Int
-  createdAt DateTime @default(now())
-
-  @@index([modelId])
-  @@index([cityKey])
 }
