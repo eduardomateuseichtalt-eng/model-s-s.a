@@ -28,6 +28,8 @@ model Model {
   isVerified Boolean  @default(false)
   createdAt  DateTime @default(now())
   shots      Shot[]
+  cityStats  CityStat[]
+  media      Media[]
 }
 
 model User {
@@ -41,14 +43,17 @@ model User {
 }
 
 model Shot {
-  id        String     @id @default(uuid())
-  modelId   String
-  videoUrl  String
-  posterUrl String?
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  model     Model      @relation(fields: [modelId], references: [id])
-  likes     ShotLike[]
+  id         String     @id @default(uuid())
+  modelId    String
+  videoUrl   String
+  posterUrl  String?
+  imageUrl   String?
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  type       ShotType   @default(VIDEO)
+  likeCount  Int        @default(0)
+  model      Model      @relation(fields: [modelId], references: [id])
+  likes      ShotLike[]
 
   @@unique([modelId, videoUrl])
 }
@@ -62,4 +67,54 @@ model ShotLike {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([shotId, userId])
+}
+
+model CityStat {
+  id        String   @id @default(uuid())
+  modelId   String
+  city      String
+  cityKey   String
+  color     String
+  count     Int
+  days      Int
+  createdAt DateTime @default(now())
+  model     Model    @relation(fields: [modelId], references: [id])
+
+  @@index([modelId])
+  @@index([cityKey])
+}
+
+model Media {
+  id        String      @id @default(uuid())
+  modelId   String
+  type      MediaType
+  status    MediaStatus @default(PENDING)
+  url       String
+  createdAt DateTime    @default(now())
+  model     Model       @relation(fields: [modelId], references: [id])
+
+  @@index([modelId])
+}
+
+model SiteAccess {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum MediaStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ShotType {
+  VIDEO
+  IMAGE
 }
