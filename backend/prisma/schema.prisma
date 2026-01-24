@@ -8,9 +8,9 @@ datasource db {
 }
 
 model Model {
-  id         String     @id @default(uuid())
+  id         String   @id @default(uuid())
   name       String
-  email      String     @unique
+  email      String   @unique
   password   String
   age        Int
   city       String?
@@ -25,10 +25,8 @@ model Model {
   waist      Int?
   hips       Int?
   priceHour  Int?
-  isVerified Boolean    @default(false)
-  createdAt  DateTime   @default(now())
-  cityStats  CityStat[]
-  media      Media[]
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
   shots      Shot[]
 }
 
@@ -45,15 +43,14 @@ model User {
 model Shot {
   id        String     @id @default(uuid())
   modelId   String
-  videoUrl  String?
+  videoUrl  String
   posterUrl String?
   isActive  Boolean    @default(true)
   createdAt DateTime   @default(now())
-  imageUrl  String?
-  type      ShotType   @default(VIDEO)
-  likeCount Int        @default(0)
   model     Model      @relation(fields: [modelId], references: [id])
   likes     ShotLike[]
+
+  @@unique([modelId, videoUrl])
 }
 
 model ShotLike {
@@ -65,54 +62,4 @@ model ShotLike {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([shotId, userId])
-}
-
-model SiteAccess {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-
-  @@index([createdAt])
-}
-
-model Media {
-  id        String      @id @default(uuid())
-  modelId   String
-  type      MediaType
-  status    MediaStatus @default(PENDING)
-  url       String
-  createdAt DateTime    @default(now())
-  model     Model       @relation(fields: [modelId], references: [id])
-
-  @@index([modelId])
-}
-
-model CityStat {
-  id        String   @id @default(uuid())
-  modelId   String
-  city      String
-  cityKey   String
-  color     String
-  count     Int
-  days      Int
-  createdAt DateTime @default(now())
-  model     Model    @relation(fields: [modelId], references: [id])
-
-  @@index([modelId])
-  @@index([cityKey])
-}
-
-enum MediaType {
-  IMAGE
-  VIDEO
-}
-
-enum MediaStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum ShotType {
-  VIDEO
-  IMAGE
 }
