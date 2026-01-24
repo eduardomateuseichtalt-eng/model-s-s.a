@@ -175,7 +175,7 @@ router.post(
         data: {
           modelId: user.id,
           type: file.mimetype.startsWith("video/") ? "VIDEO" : "IMAGE",
-          videoUrl: file.mimetype.startsWith("video/") ? result.url : null,
+          videoUrl: file.mimetype.startsWith("video/") ? result.url : "",
           imageUrl: file.mimetype.startsWith("video/") ? null : result.url,
           posterUrl: null,
           isActive: true,

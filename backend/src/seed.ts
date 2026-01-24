@@ -231,11 +231,14 @@ async function main() {
       continue;
     }
 
+    const safeVideoUrl = shot.videoUrl ?? "";
+    const safePosterUrl = shot.posterUrl ?? "";
+
     const existingShot = await prisma.shot.findFirst({
       where: {
         modelId,
         imageUrl: shot.imageUrl,
-        videoUrl: shot.videoUrl,
+        videoUrl: safeVideoUrl,
       },
     });
 
@@ -244,7 +247,7 @@ async function main() {
         where: { id: existingShot.id },
         data: {
           type: shot.type,
-          posterUrl: shot.posterUrl,
+          posterUrl: safePosterUrl,
           isActive: true,
         },
       });
@@ -254,8 +257,8 @@ async function main() {
           modelId,
           type: shot.type,
           imageUrl: shot.imageUrl,
-          videoUrl: shot.videoUrl,
-          posterUrl: shot.posterUrl,
+          videoUrl: safeVideoUrl,
+          posterUrl: safePosterUrl,
           isActive: true,
         },
       });
