@@ -1,6 +1,10 @@
+import dotenv from "dotenv";
+import path from "path";
 import bcrypt from "bcryptjs";
 import { ShotType } from "@prisma/client";
 import { prisma } from "./lib/prisma";
+
+dotenv.config({ path: path.resolve(__dirname, "..", ".env"), override: true });
 
 const models = [
   {
@@ -175,7 +179,7 @@ async function main() {
     },
   });
 
-  const adminPasswordHash = await bcrypt.hash("vamosmengao10", 10);
+  const adminPasswordHash = await bcrypt.hash("Sophia2019@", 10);
   await prisma.user.upsert({
     where: { email: "eduardomateuseichtalt@gmail.com" },
     update: {
