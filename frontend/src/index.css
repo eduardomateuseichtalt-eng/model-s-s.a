@@ -152,6 +152,51 @@ select {
   letter-spacing: 0.15em;
 }
 
+.nav-toggle {
+  display: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.nav-toggle span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 999px;
+}
+
+.nav-mobile {
+  display: none;
+}
+
+.nav-mobile-links {
+  display: grid;
+  gap: 12px;
+  padding: 18px 6vw 24px;
+  background: rgba(13, 12, 12, 0.98);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-mobile-links a,
+.nav-mobile-links button {
+  font-size: 16px;
+}
+
+.nav-mobile-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
 .nav-cta {
   padding: 10px 18px;
   border-radius: 999px;
@@ -1659,6 +1704,14 @@ select {
 
   .nav-links {
     display: none;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+  }
+
+  .nav-mobile.open {
+    display: block;
   }
 }
 
